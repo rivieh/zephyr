@@ -223,20 +223,6 @@ static inline void hal_trigger_aar_ppi_config(void)
 	/* No need to configure anything for the pre-programmed channel. */
 }
 
-/*******************************************************************************
- * Trigger Radio Rate override upon Rateboost event.
- */
-#if defined(CONFIG_HAS_HW_NRF_RADIO_BLE_CODED)
-static inline void hal_trigger_rateoverride_ppi_config(void)
-{
-	nrf_ppi_channel_endpoint_setup(
-		NRF_PPI,
-		HAL_TRIGGER_RATEOVERRIDE_PPI,
-		(uint32_t)&(NRF_RADIO->EVENTS_RATEBOOST),
-		(uint32_t)&(NRF_CCM->TASKS_RATEOVERRIDE));
-}
-#endif /* CONFIG_HAS_HW_NRF_RADIO_BLE_CODED */
-
 /******************************************************************************/
 #if defined(HAL_RADIO_GPIO_HAVE_PA_PIN) || defined(HAL_RADIO_GPIO_HAVE_LNA_PIN)
 static inline void hal_palna_ppi_setup(void)
@@ -474,6 +460,17 @@ static inline void hal_radio_sw_switch_cleanup(void)
 
 #if defined(CONFIG_BT_CTLR_PHY_CODED) && \
 	defined(CONFIG_HAS_HW_NRF_RADIO_BLE_CODED)
+/*
+ * Trigger Radio Rate override upon Rateboost event.
+ */
+static inline void hal_trigger_rateoverride_ppi_config(void)
+{
+	nrf_ppi_channel_endpoint_setup(
+		NRF_PPI,
+		HAL_TRIGGER_RATEOVERRIDE_PPI,
+		(uint32_t)&(NRF_RADIO->EVENTS_RATEBOOST),
+		(uint32_t)&(NRF_CCM->TASKS_RATEOVERRIDE));
+}
 /* The 2 adjacent TIMER EVENTS_COMPARE event offsets used for implementing
  * SW_SWITCH_TIMER-based auto-switch for TIFS, when receiving in LE Coded PHY.
  *  'index' must be 0 or 1.
