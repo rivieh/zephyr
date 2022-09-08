@@ -26,6 +26,10 @@
 
 /* Macro to define length of the BLE packet length field in bits */
 #define RADIO_PKT_CONF_LENGTH_8BIT (8U)
+#define RADIO_PKT_CONF_LENGTH_5BIT (5U)
+
+/* Macro to define length of the BLE packet S1 field in bits */
+#define RADIO_PKT_CONF_S1_8BIT (8U)
 
 /* Helper macro to create bitfield with PDU type only*/
 #define RADIO_PKT_CONF_PDU_TYPE(phy) ((uint8_t)((phy) << RADIO_PKT_CONF_PDU_TYPE_POS))
@@ -55,6 +59,7 @@ void radio_isr_set(radio_isr_cb_t cb, void *param);
 
 void radio_setup(void);
 void radio_reset(void);
+void radio_stop(void);
 void radio_phy_set(uint8_t phy, uint8_t flags);
 void radio_tx_power_set(int8_t power);
 void radio_tx_power_max_set(void);

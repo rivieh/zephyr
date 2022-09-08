@@ -130,7 +130,8 @@ Zephyr. The ``smp_svr`` sample comes in different flavours.
             -b nrf52840dk_nrf52840 \
             samples/subsys/mgmt/mcumgr/smp_svr \
             -- \
-            -DOVERLAY_CONFIG=overlay-cdc.conf
+            -DOVERLAY_CONFIG=overlay-cdc.conf \
+            -DDTC_OVERLAY_FILE=usb.overlay
 
    .. group-tab:: Shell
 
@@ -195,7 +196,7 @@ the image.
     west flash --bin-file build/zephyr/zephyr.signed.bin
 
 We need to explicitly specify the *signed* image file, otherwise the non-signed version
-will be used and the image wont be runnable.
+will be used and the image won't be runnable.
 
 Sample image: hello world!
 ==========================
@@ -253,7 +254,7 @@ On boards where a J-Link OB is present which has both CDC and MSC (virtual Mass
 Storage Device, also known as drag-and-drop) support, the MSD functionality can
 prevent mcumgr commands over the CDC UART port from working due to how USB
 endpoints are configured in the J-Link firmware (for example on the Nordic
-`nrf52840dk`) because of limiting the maximum packet size (most likely to occur
+``nrf52840dk``) because of limiting the maximum packet size (most likely to occur
 when using image management commands for updating firmware). This issue can be
 resolved by disabling MSD functionality on the J-Link device, follow the
 instructions on :ref:`nordic_segger_msd` to disable MSD support.

@@ -4,17 +4,18 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(mcumgr_img_mgmt, CONFIG_MCUMGR_IMG_MGMT_LOG_LEVEL);
 
 #include <assert.h>
-#include <drivers/flash.h>
-#include <storage/flash_map.h>
-#include <zephyr.h>
+#include <zephyr/drivers/flash.h>
+#include <zephyr/storage/flash_map.h>
+#include <zephyr/zephyr.h>
 #include <soc.h>
-#include <init.h>
-#include <dfu/mcuboot.h>
-#include <dfu/flash_img.h>
+#include <zephyr/init.h>
+#include <zephyr/dfu/mcuboot.h>
+#include <zephyr/dfu/flash_img.h>
+#include <zephyr/mgmt/mcumgr/buf.h>
 #include <mgmt/mgmt.h>
 #include <img_mgmt/img_mgmt_impl.h>
 #include <img_mgmt/img_mgmt.h>
@@ -224,17 +225,7 @@ img_mgmt_get_unused_slot_area_id(int image)
 #error "Unsupported number of images"
 #endif
 
-/**
- * Compares two image version numbers in a semver-compatible way.
- *
- * @param a	The first version to compare.
- * @param b	The second version to compare.
- *
- * @return	-1 if a < b
- * @return	0 if a = b
- * @return	1 if a > b
- */
-static int
+int
 img_mgmt_vercmp(const struct image_version *a, const struct image_version *b)
 {
 	if (a->iv_major < b->iv_major) {
@@ -520,8 +511,7 @@ img_mgmt_impl_swap_type(int slot)
 	case BOOT_SWAP_TYPE_REVERT:
 		return IMG_MGMT_SWAP_TYPE_REVERT;
 	default:
-		assert(0);
-		return IMG_MGMT_SWAP_TYPE_NONE;
+		return IMG_MGMT_SWAP_TYPE_UNKNOWN;
 	}
 }
 
@@ -557,7 +547,7 @@ img_mgmt_impl_upload_inspect(const struct img_mgmt_upload_req *req,
 
 	if (req->off == 0) {
 		/* First upload chunk. */
-		if (req->data_len < sizeof(struct image_header)) {
+		if (req->img_data.len < sizeof(struct image_header)) {
 			/*  Image header is the first thing in the image */
 			IMG_MGMT_UPLOAD_ACTION_SET_RC_RSN(action, img_mgmt_err_str_hdr_malformed);
 			return MGMT_ERR_EINVAL;
@@ -570,13 +560,13 @@ img_mgmt_impl_upload_inspect(const struct img_mgmt_upload_req *req,
 		}
 		action->size = req->size;
 
-		hdr = (struct image_header *)req->img_data;
+		hdr = (struct image_header *)req->img_data.value;
 		if (hdr->ih_magic != IMAGE_MAGIC) {
 			IMG_MGMT_UPLOAD_ACTION_SET_RC_RSN(action, img_mgmt_err_str_magic_mismatch);
 			return MGMT_ERR_EINVAL;
 		}
 
-		if (req->data_sha_len > IMG_MGMT_DATA_SHA_LEN) {
+		if (req->data_sha.len > IMG_MGMT_DATA_SHA_LEN) {
 			return MGMT_ERR_EINVAL;
 		}
 
@@ -586,9 +576,10 @@ img_mgmt_impl_upload_inspect(const struct img_mgmt_upload_req *req,
 		 * the same data hash so we can just resume it by simply including
 		 * current upload offset in response.
 		 */
-		if ((req->data_sha_len > 0) && (g_img_mgmt_state.area_id != -1)) {
-			if ((g_img_mgmt_state.data_sha_len == req->data_sha_len) &&
-			    !memcmp(g_img_mgmt_state.data_sha, req->data_sha, req->data_sha_len)) {
+		if ((req->data_sha.len > 0) && (g_img_mgmt_state.area_id != -1)) {
+			if ((g_img_mgmt_state.data_sha_len == req->data_sha.len) &&
+			    !memcmp(g_img_mgmt_state.data_sha, req->data_sha.value,
+				    req->data_sha.len)) {
 				return 0;
 			}
 		}
@@ -610,7 +601,7 @@ img_mgmt_impl_upload_inspect(const struct img_mgmt_upload_req *req,
 			}
 
 			if (fa->fa_off != hdr->ih_load_addr) {
-				IMG_MGMT_UPLOAD_ACTION_SET_RC_RSN(aciton,
+				IMG_MGMT_UPLOAD_ACTION_SET_RC_RSN(action,
 					img_mgmt_err_str_image_bad_flash_addr);
 				flash_area_close(fa);
 				return MGMT_ERR_EINVAL;
@@ -661,7 +652,7 @@ img_mgmt_impl_upload_inspect(const struct img_mgmt_upload_req *req,
 		}
 	}
 
-	action->write_bytes = req->data_len;
+	action->write_bytes = req->img_data.len;
 	action->proceed = true;
 	IMG_MGMT_UPLOAD_ACTION_SET_RC_RSN(action, NULL);
 

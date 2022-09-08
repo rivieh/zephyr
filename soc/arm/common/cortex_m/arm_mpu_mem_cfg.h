@@ -6,7 +6,7 @@
 #ifndef _ARM_CORTEX_M_MPU_MEM_CFG_H_
 #define _ARM_CORTEX_M_MPU_MEM_CFG_H_
 
-#include <arch/arm/aarch32/mpu/arm_mpu.h>
+#include <zephyr/arch/arm/aarch32/mpu/arm_mpu.h>
 
 #if !defined(CONFIG_ARMV8_M_BASELINE) && !defined(CONFIG_ARMV8_M_MAINLINE)
 
@@ -31,6 +31,12 @@
 #define REGION_FLASH_SIZE REGION_16M
 #elif CONFIG_FLASH_SIZE <= 65536
 #define REGION_FLASH_SIZE REGION_64M
+#elif CONFIG_FLASH_SIZE <= 131072
+#define REGION_FLASH_SIZE REGION_128M
+#elif CONFIG_FLASH_SIZE <= 262144
+#define REGION_FLASH_SIZE REGION_256M
+#elif CONFIG_FLASH_SIZE <= 524288
+#define REGION_FLASH_SIZE REGION_512M
 #else
 #error "Unsupported flash size configuration"
 #endif

@@ -4,7 +4,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <kernel.h>
+#include <zephyr/kernel.h>
 #include <SEGGER_SYSVIEW.h>
 #include <ksched.h>
 
@@ -50,7 +50,7 @@ void sys_trace_thread_info(struct k_thread *thread)
 static void cbSendSystemDesc(void)
 {
 	SEGGER_SYSVIEW_SendSysDesc("N=ZephyrSysView");
-	SEGGER_SYSVIEW_SendSysDesc("D=" CONFIG_BOARD " "
+	SEGGER_SYSVIEW_SendSysDesc("D=" "tempBoard" " "
 				   CONFIG_SOC_SERIES " " CONFIG_ARCH);
 	SEGGER_SYSVIEW_SendSysDesc("O=Zephyr");
 }

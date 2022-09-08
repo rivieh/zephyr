@@ -3,9 +3,9 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#include <logging/log_internal.h>
-#include <logging/log_ctrl.h>
-#include <syscall_handler.h>
+#include <zephyr/logging/log_internal.h>
+#include <zephyr/logging/log_ctrl.h>
+#include <zephyr/syscall_handler.h>
 
 /* Implementation of functions related to controlling logging sources and backends:
  * - getting/setting source details like name, filtering
@@ -37,6 +37,7 @@ void z_log_runtime_filters_init(void)
 		uint32_t *filters = z_log_dynamic_filters_get(i);
 		uint8_t level = log_compiled_level_get(i);
 
+		level = MAX(level, CONFIG_LOG_OVERRIDE_LEVEL);
 		LOG_FILTER_SLOT_SET(filters,
 				    LOG_FILTER_AGGR_SLOT_IDX,
 				    level);
@@ -109,7 +110,7 @@ uint32_t z_impl_log_filter_set(struct log_backend const *const backend,
 			uint32_t max = log_filter_get(backend, domain_id,
 						      source_id, false);
 
-			level = MIN(level, max);
+			level = MIN(level, MAX(max, CONFIG_LOG_OVERRIDE_LEVEL));
 
 			LOG_FILTER_SLOT_SET(filters,
 					    log_backend_id_get(backend),

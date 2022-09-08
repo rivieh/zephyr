@@ -32,6 +32,7 @@ config HWINFO_NRF
 	bool "NRF device ID"
 	default y
 	depends on SOC_FAMILY_NRF
+	depends on NRF_SOC_SECURE_SUPPORTED
 	help
 	  Enable Nordic NRF hwinfo driver.
 
@@ -55,6 +56,13 @@ config HWINFO_MCUX_SRC
 	depends on HAS_MCUX_SRC
 	help
 	  Enable NXP i.MX mcux SRC hwinfo driver.
+
+config HWINFO_MCUX_SRC_V2
+	bool "NXP SRC reset cause (multicore devices)"
+	default y
+	depends on HAS_MCUX_SRC_V2
+	help
+	  Enable version 2 multicore NXP i.MX mcux SRC hwinfo driver.
 
 config HWINFO_MCUX_SYSCON
 	bool "NXP LPC device ID"

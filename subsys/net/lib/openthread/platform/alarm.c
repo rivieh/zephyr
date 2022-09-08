@@ -7,10 +7,10 @@
 #define LOG_MODULE_NAME net_openthread_alarm
 #define LOG_LEVEL CONFIG_OPENTHREAD_LOG_LEVEL
 
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(LOG_MODULE_NAME);
 
-#include <kernel.h>
+#include <zephyr/kernel.h>
 #include <string.h>
 #include <inttypes.h>
 
@@ -125,4 +125,9 @@ void otPlatAlarmMicroStop(otInstance *aInstance)
 uint32_t otPlatAlarmMicroGetNow(void)
 {
 	return (uint32_t)(k_ticks_to_us_floor64(k_uptime_ticks()) - time_offset_us);
+}
+
+uint16_t otPlatTimeGetXtalAccuracy(void)
+{
+	return otPlatRadioGetCslAccuracy(NULL);
 }

@@ -6,12 +6,8 @@
 
 #define DT_DRV_COMPAT intel_cavs_hda_host_in
 
-#include <drivers/dma.h>
+#include <zephyr/drivers/dma.h>
 #include "dma_cavs_hda.h"
-
-#define LOG_LEVEL CONFIG_DMA_LOG_LEVEL
-#include <logging/log.h>
-LOG_MODULE_REGISTER(dma_cavs_hda_dma_host_in);
 
 static const struct dma_driver_api cavs_hda_dma_host_in_api = {
 	.config = cavs_hda_dma_host_in_config,
@@ -19,6 +15,7 @@ static const struct dma_driver_api cavs_hda_dma_host_in_api = {
 	.start = cavs_hda_dma_start,
 	.stop = cavs_hda_dma_stop,
 	.get_status = cavs_hda_dma_status,
+	.chan_filter = cavs_hda_dma_chan_filter,
 };
 
 #define CAVS_HDA_DMA_HOST_IN_INIT(inst)                                                            \

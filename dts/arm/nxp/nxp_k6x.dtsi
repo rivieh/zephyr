@@ -2,10 +2,10 @@
 
 #include <mem.h>
 #include <arm/armv7-m.dtsi>
-#include <dt-bindings/clock/kinetis_sim.h>
-#include <dt-bindings/clock/kinetis_mcg.h>
-#include <dt-bindings/gpio/gpio.h>
-#include <dt-bindings/i2c/i2c.h>
+#include <zephyr/dt-bindings/clock/kinetis_sim.h>
+#include <zephyr/dt-bindings/clock/kinetis_mcg.h>
+#include <zephyr/dt-bindings/gpio/gpio.h>
+#include <zephyr/dt-bindings/i2c/i2c.h>
 
 / {
 	aliases {
@@ -389,7 +389,7 @@
 			reg = <0x400ac000 0x88>;
 			interrupts = <65 3>;
 			label = "SPI_2";
-			dmas = <&edma0 0 17>, <&edma0 0 17>;
+			dmas = <&edma0 0 38>, <&edma0 0 39>;
 			dma-names = "rx", "tx";
 			rx-fifo-size = <1>;
 			tx-fifo-size = <1>;

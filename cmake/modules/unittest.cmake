@@ -32,8 +32,10 @@ add_dependencies(testbinary ${KOBJ_TYPES_H_TARGET})
 gen_kobj(KOBJ_GEN_DIR)
 
 list(APPEND INCLUDE
+  subsys/testsuite/ztest/include/zephyr
   subsys/testsuite/ztest/include
   subsys/testsuite/include
+  include/zephyr
   include
   .
 )
@@ -61,7 +63,7 @@ target_compile_options(testbinary PRIVATE
   )
 
 target_link_options(testbinary PRIVATE
-  -T "${ZEPHYR_BASE}/subsys/testsuite/include/ztest.ld"
+  -T "${ZEPHYR_BASE}/subsys/testsuite/include/ztest_unittest.ld"
   )
 
 target_link_libraries(testbinary PRIVATE

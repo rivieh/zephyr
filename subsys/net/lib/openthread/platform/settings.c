@@ -4,10 +4,10 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <kernel.h>
-#include <logging/log.h>
-#include <settings/settings.h>
-#include <random/rand32.h>
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/settings/settings.h>
+#include <zephyr/random/rand32.h>
 
 #include <openthread/platform/settings.h>
 
@@ -194,11 +194,14 @@ out:
 
 /* OpenThread APIs */
 
-void otPlatSettingsInit(otInstance *aInstance)
+void otPlatSettingsInit(otInstance *aInstance, const uint16_t *aSensitiveKeys,
+			uint16_t aSensitiveKeysLength)
 {
 	int ret;
 
 	ARG_UNUSED(aInstance);
+	ARG_UNUSED(aSensitiveKeys);
+	ARG_UNUSED(aSensitiveKeysLength);
 
 	ret = settings_subsys_init();
 	if (ret != 0) {

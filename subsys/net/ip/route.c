@@ -9,19 +9,19 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(net_route, CONFIG_NET_ROUTE_LOG_LEVEL);
 
-#include <kernel.h>
+#include <zephyr/kernel.h>
 #include <limits.h>
 #include <zephyr/types.h>
-#include <sys/slist.h>
+#include <zephyr/sys/slist.h>
 
-#include <net/net_pkt.h>
-#include <net/net_core.h>
-#include <net/net_stats.h>
-#include <net/net_mgmt.h>
-#include <net/net_ip.h>
+#include <zephyr/net/net_pkt.h>
+#include <zephyr/net/net_core.h>
+#include <zephyr/net/net_stats.h>
+#include <zephyr/net/net_mgmt.h>
+#include <zephyr/net/net_ip.h>
 
 #include "net_private.h"
 #include "ipv6.h"
@@ -852,6 +852,7 @@ int net_route_mcast_forward_packet(struct net_pkt *pkt,
 		if (net_send_data(pkt_cpy) >= 0) {
 			++ret;
 		} else {
+			net_pkt_unref(pkt_cpy);
 			--err;
 		}
 	}

@@ -3,7 +3,7 @@
  *
  * SPDX-License-Identifier: Apache-2.0
  */
-#include <sys/util.h>
+#include <zephyr/sys/util.h>
 #include "radio_nrf5_fem.h"
 
 #if defined(CONFIG_BT_CTLR_TIFS_HW) || !defined(CONFIG_BT_CTLR_SW_SWITCH_SINGLE_TIMER)
@@ -76,13 +76,11 @@
  */
 #define HAL_TRIGGER_AAR_PPI 23
 
-/* Trigger Radio Rate override upon Rateboost event. */
-#if defined(CONFIG_HAS_HW_NRF_RADIO_BLE_CODED)
-#define HAL_TRIGGER_RATEOVERRIDE_PPI 14
-#endif /* CONFIG_HAS_HW_NRF_RADIO_BLE_CODED */
 
+#if defined(HAL_RADIO_GPIO_HAVE_PA_PIN) || defined(HAL_RADIO_GPIO_HAVE_LNA_PIN)
 #define HAL_ENABLE_PALNA_PPI  15
 #define HAL_DISABLE_PALNA_PPI 16
+#endif
 
 #if defined(HAL_RADIO_FEM_IS_NRF21540)
 #define HAL_ENABLE_FEM_PPI  4
@@ -148,6 +146,9 @@
 
 #if defined(CONFIG_BT_CTLR_PHY_CODED) && \
 	defined(CONFIG_HAS_HW_NRF_RADIO_BLE_CODED)
+	
+/* Trigger Radio Rate override upon Rateboost event. */
+#define HAL_TRIGGER_RATEOVERRIDE_PPI 14
 
 /* Wire the SW SWITCH TIMER EVENTS_COMPARE[<cc_offset>] event
  * to RADIO TASKS_TXEN/RXEN task.
@@ -178,6 +179,17 @@
  */
 #define HAL_SW_SWITCH_TIMER_PHYEND_DELAY_COMPENSATION_DISABLE_PPI 19
 #endif /* CONFIG_BT_CTLR_DF_PHYEND_OFFSET_COMPENSATION_ENABLE */
+
+#if defined(CONFIG_BT_CTLR_DF_CONN_CTE_RX)
+/* Trigger encryption task upon bit counter match event fire:
+ * wire the RADIO EVENTS_BCMATCH event to the CCM TASKS_CRYPT task.
+ *
+ * Note: The PPI number is shared with HAL_TRIGGER_RATEOVERRIDE_PPI because it is used only
+ * when direction finding RX and PHY is set to PHY1M. Due to that it can be shared with Radio Rate
+ * override.
+ */
+#define HAL_TRIGGER_CRYPT_DELAY_PPI 14
+#endif /* CONFIG_BT_CTLR_DF_CONN_CTE_RX */
 
 /* The 2 adjacent PPI groups used for implementing SW_SWITCH_TIMER-based
  * auto-switch for TIFS. 'index' must be 0 or 1.

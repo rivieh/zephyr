@@ -354,15 +354,6 @@ module-help = Enables TCP handler output debug messages
 source "subsys/net/Kconfig.template.log_config.net"
 endif # NET_TCP
 
-config NET_TCP_BACKLOG_SIZE
-	int "Number of simultaneous incoming TCP connections"
-	depends on NET_TCP
-	default 1
-	range 1 128
-	help
-	  The number of simultaneous TCP connection attempts, i.e. outstanding
-	  TCP connections waiting for initial ACK.
-
 config NET_TCP_TIME_WAIT_DELAY
 	int "How long to wait in TIME_WAIT state (in milliseconds)"
 	depends on NET_TCP
@@ -593,6 +584,13 @@ config NET_CONTEXT_RCVBUF
 	  If is possible to define the maximum socket receive buffer per socket.
 	  The default value is set by CONFIG_NET_TCP_MAX_RECV_WINDOW_SIZE. For
 	  TCP sockets, the rcvbuf will determine the receive window size.
+
+config NET_CONTEXT_SNDBUF
+	bool "Add SNDBUF support to net_context"
+	help
+	  It is possible to define the maximum socket send buffer per socket.
+	  For TCP sockets, the sndbuf will determine the total size of queued
+	  data in the TCP layer.
 
 config NET_TEST
 	bool "Network Testing"

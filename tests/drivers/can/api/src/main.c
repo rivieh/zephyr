@@ -5,7 +5,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <drivers/can.h>
+#include <zephyr/drivers/can.h>
 #include <ztest.h>
 
 /**
@@ -14,6 +14,12 @@
  * @defgroup t_can_api test_can_api
  * @}
  */
+
+/**
+ * Test bitrates in bits/second.
+ */
+#define TEST_BITRATE_1 125000
+#define TEST_BITRATE_2 250000
 
 /**
  * @brief Test timeouts.
@@ -92,6 +98,28 @@ const struct zcan_frame test_ext_frame_2 = {
 	.id      = TEST_CAN_EXT_ID_2,
 	.dlc     = 8,
 	.data    = {1, 2, 3, 4, 5, 6, 7, 8}
+};
+
+/**
+ * @brief Standard (11-bit) CAN ID RTR frame 1.
+ */
+const struct zcan_frame test_std_rtr_frame_1 = {
+	.id_type = CAN_STANDARD_IDENTIFIER,
+	.rtr     = CAN_REMOTEREQUEST,
+	.id      = TEST_CAN_STD_ID_1,
+	.dlc     = 0,
+	.data    = {0}
+};
+
+/**
+ * @brief Extended (29-bit) CAN ID RTR frame 1.
+ */
+const struct zcan_frame test_ext_rtr_frame_1 = {
+	.id_type = CAN_EXTENDED_IDENTIFIER,
+	.rtr     = CAN_REMOTEREQUEST,
+	.id      = TEST_CAN_EXT_ID_1,
+	.dlc     = 0,
+	.data    = {0}
 };
 
 /**
@@ -188,6 +216,30 @@ const struct zcan_filter test_ext_masked_filter_2 = {
 	.id = TEST_CAN_EXT_ID_1,
 	.rtr_mask = 1,
 	.id_mask = TEST_CAN_EXT_MASK
+};
+
+/**
+ * @brief Standard (11-bit) CAN ID RTR filter 1. This filter matches
+ * ``test_std_rtr_frame_1``.
+ */
+const struct zcan_filter test_std_rtr_filter_1 = {
+	.id_type = CAN_STANDARD_IDENTIFIER,
+	.rtr = CAN_REMOTEREQUEST,
+	.id = TEST_CAN_STD_ID_1,
+	.rtr_mask = 1,
+	.id_mask = CAN_STD_ID_MASK
+};
+
+/**
+ * @brief Extended (29-bit) CAN ID RTR filter 1. This filter matches
+ * ``test_ext_rtr_frame_1``.
+ */
+const struct zcan_filter test_ext_rtr_filter_1 = {
+	.id_type = CAN_EXTENDED_IDENTIFIER,
+	.rtr = CAN_REMOTEREQUEST,
+	.id = TEST_CAN_EXT_ID_1,
+	.rtr_mask = 1,
+	.id_mask = CAN_EXT_ID_MASK
 };
 
 /**
@@ -580,6 +632,55 @@ static void send_receive(const struct zcan_filter *filter1,
 }
 
 /**
+ * @brief Perform a send/receive test with a set of CAN ID filters and CAN frames, RTR and data
+ * frames.
+ *
+ * @param data_filter CAN data filter
+ * @param rtr_filter  CAN RTR filter
+ * @param data_frame  CAN data frame
+ * @param rtr_frame   CAN RTR frame
+ */
+void send_receive_rtr(const struct zcan_filter *data_filter,
+		      const struct zcan_filter *rtr_filter,
+		      const struct zcan_frame *data_frame,
+		      const struct zcan_frame *rtr_frame)
+{
+	struct zcan_frame frame;
+	int filter_id;
+	int err;
+
+	filter_id = add_rx_msgq(can_dev, rtr_filter);
+
+	/* Verify that RTR filter does not match data frame */
+	send_test_frame(can_dev, data_frame);
+	err = k_msgq_get(&can_msgq, &frame, TEST_RECEIVE_TIMEOUT);
+	zassert_equal(err, -EAGAIN, "Data frame passed RTR filter");
+
+	/* Verify that RTR filter matches RTR frame */
+	send_test_frame(can_dev, rtr_frame);
+	err = k_msgq_get(&can_msgq, &frame, TEST_RECEIVE_TIMEOUT);
+	zassert_equal(err, 0, "receive timeout");
+	assert_frame_equal(&frame, rtr_frame, 0);
+
+	can_remove_rx_filter(can_dev, filter_id);
+
+	filter_id = add_rx_msgq(can_dev, data_filter);
+
+	/* Verify that data filter does not match RTR frame */
+	send_test_frame(can_dev, rtr_frame);
+	err = k_msgq_get(&can_msgq, &frame, TEST_RECEIVE_TIMEOUT);
+	zassert_equal(err, -EAGAIN, "RTR frame passed data filter");
+
+	/* Verify that data filter matches data frame */
+	send_test_frame(can_dev, data_frame);
+	err = k_msgq_get(&can_msgq, &frame, TEST_RECEIVE_TIMEOUT);
+	zassert_equal(err, 0, "receive timeout");
+	assert_frame_equal(&frame, data_frame, 0);
+
+	can_remove_rx_filter(can_dev, filter_id);
+}
+
+/**
  * @brief Test getting the CAN core clock rate.
  */
 static void test_get_core_clock(void)
@@ -590,6 +691,28 @@ static void test_get_core_clock(void)
 	err = can_get_core_clock(can_dev, &rate);
 	zassert_equal(err, 0, "failed to get CAN core clock rate (err %d)", err);
 	zassert_not_equal(rate, 0, "CAN core clock rate is 0");
+}
+
+/**
+ * @brief CAN state change callback.
+ */
+static void state_change_callback(const struct device *dev, enum can_state state,
+				  struct can_bus_err_cnt err_cnt, void *user_data)
+{
+	ARG_UNUSED(dev);
+	ARG_UNUSED(state);
+	ARG_UNUSED(err_cnt);
+	ARG_UNUSED(user_data);
+}
+
+/**
+ * @brief Test setting the CAN state change callback.
+ */
+static void test_set_state_change_callback(void)
+{
+	/* It is not possible to provoke a change of state, but test the API call */
+	can_set_state_change_callback(can_dev, state_change_callback, NULL);
+	can_set_state_change_callback(can_dev, NULL, NULL);
 }
 
 /**
@@ -608,8 +731,19 @@ static void test_set_bitrate_too_high(void)
 	zassert_equal(err, 0, "failed to get max bitrate (err %d)", err);
 	zassert_not_equal(max, 0, "max bitrate is 0");
 
-	err = can_set_bitrate(can_dev, max + 1, max + 1);
+	err = can_set_bitrate(can_dev, max + 1);
 	zassert_equal(err, -ENOTSUP, "too high bitrate accepted");
+}
+
+/**
+ * @brief Test setting bitrate.
+ */
+static void test_set_bitrate(void)
+{
+	int err;
+
+	err = can_set_bitrate(can_dev, TEST_BITRATE_1);
+	zassert_equal(err, 0, "failed to set bitrate");
 }
 
 /**
@@ -622,7 +756,7 @@ static void test_set_loopback(void)
 {
 	int err;
 
-	err = can_set_mode(can_dev, CAN_LOOPBACK_MODE);
+	err = can_set_mode(can_dev, CAN_MODE_LOOPBACK);
 	zassert_equal(err, 0, "failed to set loopback-mode (err %d)", err);
 }
 
@@ -663,6 +797,69 @@ static void test_add_filter(void)
 
 	filter_id = add_rx_filter(can_dev, &test_ext_masked_filter_1, rx_ext_mask_callback_1);
 	can_remove_rx_filter(can_dev, filter_id);
+}
+
+/**
+ * @brief Test adding up to and above the maximum number of RX filters.
+ *
+ * @param id_type CAN frame identifier type
+ * @param id_mask filter
+ */
+static void add_remove_max_filters(enum can_ide id_type)
+{
+	uint32_t id_mask = id_type == CAN_STANDARD_IDENTIFIER ? CAN_STD_ID_MASK : CAN_EXT_ID_MASK;
+	struct zcan_filter filter = {
+		.id_type = id_type,
+		.rtr = CAN_DATAFRAME,
+		.id = 0,
+		.rtr_mask = 1,
+		.id_mask = id_mask,
+	};
+	int filter_id;
+	int max;
+	int i;
+
+	max = can_get_max_filters(can_dev, id_type);
+	if (max == -ENOSYS || max == 0) {
+		/*
+		 * Skip test if max is not known or no filters of the given type
+		 * is supported.
+		 */
+		ztest_test_skip();
+	}
+
+	zassert_true(max > 0, "failed to get max filters (err %d)", max);
+
+	int filter_ids[max];
+
+	for (i = 0; i < max; i++) {
+		filter.id++;
+		filter_ids[i] = add_rx_msgq(can_dev, &filter);
+	}
+
+	filter.id++;
+	filter_id = can_add_rx_filter_msgq(can_dev, &can_msgq, &filter);
+	zassert_equal(filter_id, -ENOSPC, "added more than max filters");
+
+	for (i = 0; i < max; i++) {
+		can_remove_rx_filter(can_dev, filter_ids[i]);
+	}
+}
+
+/**
+ * @brief Test max standard (11-bit) CAN RX filters.
+ */
+static void test_max_std_filters(void)
+{
+	add_remove_max_filters(CAN_STANDARD_IDENTIFIER);
+}
+
+/**
+ * @brief Test max extended (29-bit) CAN RX filters.
+ */
+static void test_max_ext_filters(void)
+{
+	add_remove_max_filters(CAN_EXTENDED_IDENTIFIER);
 }
 
 /**
@@ -757,6 +954,7 @@ void test_send_receive_msgq(void)
 	for (i = 0; i < nframes; i++) {
 		err = k_msgq_get(&can_msgq, &frame, TEST_RECEIVE_TIMEOUT);
 		zassert_equal(err, 0, "receive timeout");
+		assert_frame_equal(&frame, &test_std_frame_1, 0);
 	}
 
 	for (i = 0; i < nframes; i++) {
@@ -766,9 +964,28 @@ void test_send_receive_msgq(void)
 	for (i = 0; i < nframes; i++) {
 		err = k_msgq_get(&can_msgq, &frame, TEST_RECEIVE_TIMEOUT);
 		zassert_equal(err, 0, "receive timeout");
+		assert_frame_equal(&frame, &test_std_frame_1, 0);
 	}
 
 	can_remove_rx_filter(can_dev, filter_id);
+}
+
+/**
+ * @brief Test send/receive with standard (11-bit) CAN IDs and remote transmission request (RTR).
+ */
+void test_send_receive_std_id_rtr(void)
+{
+	send_receive_rtr(&test_std_filter_1, &test_std_rtr_filter_1,
+			 &test_std_frame_1, &test_std_rtr_frame_1);
+}
+
+/**
+ * @brief Test send/receive with extended (29-bit) CAN IDs and remote transmission request (RTR).
+ */
+void test_send_receive_ext_id_rtr(void)
+{
+	send_receive_rtr(&test_ext_filter_1, &test_ext_rtr_filter_1,
+			 &test_ext_frame_1, &test_ext_rtr_frame_1);
 }
 
 /**
@@ -836,6 +1053,62 @@ static void test_get_state(void)
 	zassert_equal(err, 0, "failed to get CAN state + error counters (err %d)", err);
 }
 
+static void test_filters_preserved_through_mode_change(void)
+{
+	struct zcan_frame frame;
+	int filter_id;
+	int err;
+
+	filter_id = add_rx_msgq(can_dev, &test_std_filter_1);
+	send_test_frame(can_dev, &test_std_frame_1);
+
+	err = k_msgq_get(&can_msgq, &frame, TEST_RECEIVE_TIMEOUT);
+	zassert_equal(err, 0, "receive timeout");
+	assert_frame_equal(&frame, &test_std_frame_1, 0);
+
+	err = can_set_mode(can_dev, CAN_MODE_NORMAL);
+	zassert_equal(err, 0, "failed to set normal mode (err %d)", err);
+
+	err = can_set_mode(can_dev, CAN_MODE_LOOPBACK);
+	zassert_equal(err, 0, "failed to set loopback-mode (err %d)", err);
+
+	send_test_frame(can_dev, &test_std_frame_1);
+
+	err = k_msgq_get(&can_msgq, &frame, TEST_RECEIVE_TIMEOUT);
+	zassert_equal(err, 0, "receive timeout");
+	assert_frame_equal(&frame, &test_std_frame_1, 0);
+
+	can_remove_rx_filter(can_dev, filter_id);
+}
+
+static void test_filters_preserved_through_bitrate_change(void)
+{
+	struct zcan_frame frame;
+	int filter_id;
+	int err;
+
+	filter_id = add_rx_msgq(can_dev, &test_std_filter_1);
+	send_test_frame(can_dev, &test_std_frame_1);
+
+	err = k_msgq_get(&can_msgq, &frame, TEST_RECEIVE_TIMEOUT);
+	zassert_equal(err, 0, "receive timeout");
+	assert_frame_equal(&frame, &test_std_frame_1, 0);
+
+	err = can_set_bitrate(can_dev, TEST_BITRATE_2);
+	zassert_equal(err, 0, "failed to set bitrate");
+
+	err = can_set_bitrate(can_dev, TEST_BITRATE_1);
+	zassert_equal(err, 0, "failed to set bitrate");
+
+	send_test_frame(can_dev, &test_std_frame_1);
+
+	err = k_msgq_get(&can_msgq, &frame, TEST_RECEIVE_TIMEOUT);
+	zassert_equal(err, 0, "receive timeout");
+	assert_frame_equal(&frame, &test_std_frame_1, 0);
+
+	can_remove_rx_filter(can_dev, filter_id);
+}
+
 void test_main(void)
 {
 	k_sem_init(&rx_callback_sem, 0, 2);
@@ -849,10 +1122,14 @@ void test_main(void)
 	/* Tests without callbacks can run in userspace */
 	ztest_test_suite(can_api_tests,
 			 ztest_user_unit_test(test_get_core_clock),
+			 ztest_unit_test(test_set_state_change_callback),
 			 ztest_user_unit_test(test_set_bitrate_too_high),
+			 ztest_user_unit_test(test_set_bitrate),
 			 ztest_user_unit_test(test_set_loopback),
 			 ztest_user_unit_test(test_send_and_forget),
 			 ztest_unit_test(test_add_filter),
+			 ztest_user_unit_test(test_max_std_filters),
+			 ztest_user_unit_test(test_max_ext_filters),
 			 ztest_user_unit_test(test_receive_timeout),
 			 ztest_unit_test(test_send_callback),
 			 ztest_unit_test(test_send_receive_std_id),
@@ -860,9 +1137,13 @@ void test_main(void)
 			 ztest_unit_test(test_send_receive_std_id_masked),
 			 ztest_unit_test(test_send_receive_ext_id_masked),
 			 ztest_user_unit_test(test_send_receive_msgq),
+			 ztest_user_unit_test(test_send_receive_std_id_rtr),
+			 ztest_user_unit_test(test_send_receive_ext_id_rtr),
 			 ztest_user_unit_test(test_send_invalid_dlc),
 			 ztest_unit_test(test_send_receive_wrong_id),
 			 ztest_user_unit_test(test_recover),
-			 ztest_user_unit_test(test_get_state));
+			 ztest_user_unit_test(test_get_state),
+			 ztest_user_unit_test(test_filters_preserved_through_mode_change),
+			 ztest_user_unit_test(test_filters_preserved_through_bitrate_change));
 	ztest_run_test_suite(can_api_tests);
 }

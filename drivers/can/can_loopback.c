@@ -10,9 +10,11 @@
 #include <stdbool.h>
 #include <string.h>
 
-#include <drivers/can.h>
-#include <kernel.h>
-#include <logging/log.h>
+#include <zephyr/drivers/can.h>
+#include <zephyr/kernel.h>
+#include <zephyr/logging/log.h>
+
+#include "can_utils.h"
 
 LOG_MODULE_REGISTER(can_loopback, CONFIG_CAN_LOG_LEVEL);
 
@@ -56,13 +58,6 @@ static void dispatch_frame(const struct device *dev,
 	filter->rx_cb(dev, &frame_tmp, filter->cb_arg);
 }
 
-static inline int check_filter_match(const struct zcan_frame *frame,
-				     const struct zcan_filter *filter)
-{
-	return ((filter->id & filter->id_mask) ==
-		(frame->id & filter->id_mask));
-}
-
 static void tx_thread(void *arg1, void *arg2, void *arg3)
 {
 	const struct device *dev = arg1;
@@ -80,7 +75,7 @@ static void tx_thread(void *arg1, void *arg2, void *arg3)
 		for (int i = 0; i < CONFIG_CAN_MAX_FILTER; i++) {
 			filter = &data->filters[i];
 			if (filter->rx_cb &&
-			    check_filter_match(&frame.frame, &filter->filter)) {
+			    can_utils_filter_match(&frame.frame, &filter->filter) != 0) {
 				dispatch_frame(dev, &frame.frame, filter);
 			}
 		}
@@ -197,21 +192,20 @@ static void can_loopback_remove_rx_filter(const struct device *dev, int filter_i
 	k_mutex_unlock(&data->mtx);
 }
 
-static int can_loopback_set_mode(const struct device *dev, enum can_mode mode)
+static int can_loopback_set_mode(const struct device *dev, can_mode_t mode)
 {
 	struct can_loopback_data *data = dev->data;
 
-	data->loopback = mode == CAN_LOOPBACK_MODE ? 1 : 0;
+	data->loopback = (mode & CAN_MODE_LOOPBACK) != 0 ? 1 : 0;
 	return 0;
 }
 
 static int can_loopback_set_timing(const struct device *dev,
-				   const struct can_timing *timing,
-				   const struct can_timing *timing_data)
+				   const struct can_timing *timing)
 {
 	ARG_UNUSED(dev);
 	ARG_UNUSED(timing);
-	ARG_UNUSED(timing_data);
+
 	return 0;
 }
 
@@ -332,41 +326,3 @@ static int can_loopback_init(const struct device *dev)
 			      &can_loopback_driver_api);
 
 DT_INST_FOREACH_STATUS_OKAY(CAN_LOOPBACK_INIT)
-
-#if defined(CONFIG_NET_SOCKETS_CAN)
-#include "socket_can_generic.h"
-
-#define CAN_LOOPBACK_SOCKET_CAN(inst)						\
-	static struct socket_can_context socket_can_context_##inst;		\
-										\
-	static int socket_can_init_##inst(const struct device *dev)		\
-	{									\
-		const struct device *can_dev = DEVICE_DT_INST_GET(inst);	\
-		struct socket_can_context *socket_context = dev->data;		\
-										\
-		LOG_DBG("Init socket CAN device %p (%s) for dev %p (%s)",	\
-			dev, dev->name, can_dev, can_dev->name);		\
-										\
-		socket_context->can_dev = can_dev;				\
-		socket_context->msgq = &socket_can_msgq;			\
-										\
-		socket_context->rx_tid =					\
-			k_thread_create(&socket_context->rx_thread_data,	\
-					rx_thread_stack,			\
-					K_KERNEL_STACK_SIZEOF(rx_thread_stack),	\
-					rx_thread, socket_context, NULL, NULL,	\
-					RX_THREAD_PRIORITY, 0, K_NO_WAIT);	\
-										\
-		return 0;							\
-	}									\
-										\
-	NET_DEVICE_INIT(socket_can_loopback_##inst, SOCKET_CAN_NAME_##inst,	\
-			socket_can_init_##inst, NULL,				\
-			&socket_can_context_##inst, NULL,			\
-			CONFIG_CAN_INIT_PRIORITY, &socket_can_api,		\
-			CANBUS_RAW_L2, NET_L2_GET_CTX_TYPE(CANBUS_RAW_L2),	\
-			CAN_MTU);
-
-DT_INST_FOREACH_STATUS_OKAY(CAN_LOOPBACK_SOCKET_CAN)
-
-#endif /* CONFIG_NET_SOCKETS_CAN */

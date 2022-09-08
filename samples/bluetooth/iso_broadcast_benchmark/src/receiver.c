@@ -5,13 +5,13 @@
  */
 
 #include <ctype.h>
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/conn.h>
-#include <bluetooth/iso.h>
-#include <sys/byteorder.h>
-#include <console/console.h>
+#include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/conn.h>
+#include <zephyr/bluetooth/iso.h>
+#include <zephyr/sys/byteorder.h>
+#include <zephyr/console/console.h>
 
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 LOG_MODULE_REGISTER(iso_broadcast_receiver, LOG_LEVEL_DBG);
 
 #define DEVICE_NAME	CONFIG_BT_DEVICE_NAME
@@ -181,7 +181,7 @@ static void iso_recv(struct bt_iso_chan *chan,
 
 	/* NOTE: The packets received may be on different BISes */
 
-	if (info->flags == BT_ISO_FLAGS_VALID) {
+	if (info->flags & BT_ISO_FLAGS_VALID) {
 		stats_current_sync.iso_recv_count++;
 		stats_overall.iso_recv_count++;
 		stats_latest_arr[stats_latest_arr_pos++] = true;

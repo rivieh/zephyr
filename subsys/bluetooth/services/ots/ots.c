@@ -8,25 +8,25 @@
 #include <stddef.h>
 #include <string.h>
 #include <errno.h>
-#include <init.h>
-#include <sys/printk.h>
-#include <sys/byteorder.h>
-#include <zephyr.h>
+#include <zephyr/init.h>
+#include <zephyr/sys/printk.h>
+#include <zephyr/sys/byteorder.h>
+#include <zephyr/zephyr.h>
 
-#include <bluetooth/bluetooth.h>
-#include <bluetooth/l2cap.h>
-#include <bluetooth/conn.h>
-#include <bluetooth/uuid.h>
-#include <bluetooth/gatt.h>
+#include <zephyr/bluetooth/bluetooth.h>
+#include <zephyr/bluetooth/l2cap.h>
+#include <zephyr/bluetooth/conn.h>
+#include <zephyr/bluetooth/uuid.h>
+#include <zephyr/bluetooth/gatt.h>
 
-#include <sys/check.h>
+#include <zephyr/sys/check.h>
 
-#include <bluetooth/services/ots.h>
+#include <zephyr/bluetooth/services/ots.h>
 #include "ots_internal.h"
 #include "ots_obj_manager_internal.h"
 #include "ots_dir_list_internal.h"
 
-#include <logging/log.h>
+#include <zephyr/logging/log.h>
 
 LOG_MODULE_REGISTER(bt_ots, CONFIG_BT_OTS_LOG_LEVEL);
 
@@ -187,13 +187,13 @@ ssize_t ots_obj_name_write(struct bt_conn *conn,
 		rc = bt_gatt_ots_obj_manager_next_obj_get(ots->obj_manager, obj, &obj);
 	}
 
-	/* Update real object name after no duplicate detected */
-	strcpy(ots->cur_obj->metadata.name, name);
-
+	/* No duplicate detected, notify application and update real object name */
 	if (ots->cb->obj_name_written) {
 		ots->cb->obj_name_written(ots, conn, ots->cur_obj->id,
-					  ots->cur_obj->metadata.name);
+					  ots->cur_obj->metadata.name, name);
 	}
+
+	strcpy(ots->cur_obj->metadata.name, name);
 
 	return len;
 }

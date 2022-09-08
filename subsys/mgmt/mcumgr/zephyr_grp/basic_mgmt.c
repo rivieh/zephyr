@@ -4,14 +4,14 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-#include <zephyr.h>
-#include <logging/log.h>
-#include <init.h>
+#include <zephyr/zephyr.h>
+#include <zephyr/logging/log.h>
+#include <zephyr/init.h>
 #include <mgmt/mgmt.h>
-#include <mgmt/mcumgr/zephyr_groups.h>
-#include <storage/flash_map.h>
+#include <zephyr/mgmt/mcumgr/zephyr_groups.h>
+#include <zephyr/storage/flash_map.h>
 
-LOG_MODULE_REGISTER(mgmt_zephyr_basic, CONFIG_MGMT_SETTINGS_LOG_LEVEL);
+LOG_MODULE_REGISTER(mcumgr_zephyr_grp);
 
 static int storage_erase(void)
 {
@@ -33,16 +33,13 @@ static int storage_erase(void)
 
 static int storage_erase_handler(struct mgmt_ctxt *ctxt)
 {
-	CborError cbor_err = 0;
 	int rc = storage_erase();
 
-	cbor_err |= cbor_encode_text_stringz(&ctxt->encoder, "rc");
-	cbor_err |= cbor_encode_int(&ctxt->encoder, rc);
-	if (cbor_err != 0) {
-		return MGMT_ERR_ENOMEM;
-	}
-
-	return MGMT_ERR_EOK;
+	/* No point to self encode "rc" here, the SMP can do that for us */
+	/* TODO: Decent error reporting for subsystems instead of using the
+	 * "rc" from SMP.
+	 */
+	return rc;
 }
 
 static const struct mgmt_handler zephyr_mgmt_basic_handlers[] = {

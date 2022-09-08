@@ -6,7 +6,7 @@
 
 #include "mock_backend.h"
 #include <ztest.h>
-#include <logging/log_core.h>
+#include <zephyr/logging/log_core.h>
 
 void mock_log_backend_reset(const struct log_backend *backend)
 {
@@ -308,8 +308,8 @@ static void process(const struct log_backend *const backend,
 		    log_const_source_id((const struct log_source_const_data *)source);
 	}
 
-	zassert_equal(source_id, exp->source_id, "sourc_id:%p (exp: %d)",
-		      msg->log.hdr.source, exp->source_id);
+	zassert_equal(source_id, exp->source_id, "source_id:%p (exp: %d)",
+		      source_id, exp->source_id);
 
 	size_t len;
 	uint8_t *data;
