@@ -78,8 +78,10 @@
 #define HAL_TRIGGER_RATEOVERRIDE_PPI 14
 #endif /* CONFIG_HAS_HW_NRF_RADIO_BLE_CODED */
 
+#if defined(HAL_RADIO_GPIO_HAVE_PA_PIN) || defined(HAL_RADIO_GPIO_HAVE_LNA_PIN)
 #define HAL_ENABLE_PALNA_PPI  15
 #define HAL_DISABLE_PALNA_PPI 16
+#endif
 
 #if defined(HAL_RADIO_FEM_IS_NRF21540)
 #define HAL_ENABLE_FEM_PPI  4
@@ -143,6 +145,9 @@
 #define HAL_SW_SWITCH_RADIO_ENABLE_PPI_BASE 12
 #endif
 
+#if defined(CONFIG_BT_CTLR_PHY_CODED) && \
+	defined(CONFIG_HAS_HW_NRF_RADIO_BLE_CODED)
+
 /* Wire the SW SWITCH TIMER EVENTS_COMPARE[<cc_offset>] event
  * to RADIO TASKS_TXEN/RXEN task.
  */
@@ -152,6 +157,8 @@
  * wire the RADIO EVENTS_RATEBOOST event to SW_SWITCH_TIMER TASKS_CAPTURE task.
  */
 #define HAL_SW_SWITCH_TIMER_S8_DISABLE_PPI 19
+
+#endif
 
 #if defined(CONFIG_BT_CTLR_DF_PHYEND_OFFSET_COMPENSATION_ENABLE)
 /* Wire the SW SWITCH PHYEND delay compensation TIMER EVENTS_COMPARE[<cc_offset>] event to software
