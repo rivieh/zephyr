@@ -614,6 +614,35 @@ static int cmd_init(const struct shell *sh, size_t argc, char *argv[])
 	return err;
 }
 
+static int cmd_set_blanking(const struct shell *sh, size_t argc, char *argv[])
+{
+	int err;
+	int blank;
+	const struct display_driver_api *api = dev->api;
+
+	if (!dev) {
+		shell_error(sh, HELP_INIT);
+		return -ENODEV;
+	}
+
+	blank = strtol(argv[1], NULL, 10);
+
+	if(blank){
+		err = api->blanking_on(dev);
+	}else{
+		err = api->blanking_off(dev);
+	}
+
+	if (err) {
+		shell_error(sh, "Failed to set blanking state to %d, err=%d\n", blank, err);
+		return err;
+	}
+
+	shell_print(sh, "Set blanking to %d", blank);
+
+	return err;
+}
+
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_cmd_get_param,
 
 	SHELL_CMD_ARG(all, NULL, NULL, cmd_get_param_all, 1, 0),
@@ -655,6 +684,7 @@ SHELL_STATIC_SUBCMD_SET_CREATE(cfb_cmds,
 		  "horizontal direction", NULL),
 	SHELL_CMD(draw, &sub_cmd_draw, "drawing text", NULL),
 	SHELL_CMD_ARG(clear, NULL, HELP_NONE, cmd_clear, 1, 0),
+	SHELL_CMD_ARG(set_blanking, NULL, "<on/off>", cmd_set_blanking, 2, 0),
 	SHELL_SUBCMD_SET_END
 );
 
