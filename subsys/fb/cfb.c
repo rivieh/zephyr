@@ -557,7 +557,11 @@ int cfb_framebuffer_init(const struct device *dev)
 	fb->fonts = TYPE_SECTION_START(cfb_font);
 	fb->font_idx = 0U;
 
-	fb->size = fb->x_res * fb->y_res / fb->ppt;
+	fb->size = fb->y_res / fb->ppt;
+	if((fb->y_res % fb->ppt) != 0){
+		fb->size++;
+	}
+	fb->size *= fb->x_res;
 	fb->buf = k_malloc(fb->size);
 	if (!fb->buf) {
 		return -ENOMEM;
