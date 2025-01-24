@@ -298,6 +298,18 @@ int cfb_draw_rect(const struct device *dev, const struct cfb_position *start,
 	return 0;
 }
 
+int cfb_draw_filled_rect(const struct device *dev, const struct cfb_position *start,
+		  const struct cfb_position *end)
+{
+	struct char_framebuffer *fb = &char_fb;
+
+	for(uint16_t line = start->y; line <= end->y; line++) {
+		draw_line(fb, start->x, line, end->x, line);
+	}
+
+	return 0;
+}
+
 int cfb_draw_text(const struct device *dev, const char *const str, int16_t x, int16_t y)
 {
 	return draw_text(dev, str, x, y, false);

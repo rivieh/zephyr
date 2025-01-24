@@ -222,6 +222,32 @@ static int cmd_draw_rect(const struct shell *sh, size_t argc, char *argv[])
 	return err;
 }
 
+static int cmd_draw_filled_rect(const struct shell *sh, size_t argc, char *argv[])
+{
+	int err;
+	struct cfb_position start, end;
+
+	if (!dev) {
+		shell_error(sh, HELP_INIT);
+		return -ENODEV;
+	}
+
+	start.x = strtol(argv[1], NULL, 10);
+	start.y = strtol(argv[2], NULL, 10);
+	end.x = strtol(argv[3], NULL, 10);
+	end.y = strtol(argv[4], NULL, 10);
+
+	err = cfb_draw_filled_rect(dev, &start, &end);
+	if (err) {
+		shell_error(sh, "Failed rectanble drawing to Framebuffer error=%d", err);
+		return err;
+	}
+
+	err = cfb_framebuffer_finalize(dev);
+
+	return err;
+}
+
 static int cmd_scroll_vert(const struct shell *sh, size_t argc, char *argv[])
 {
 	int err = 0;
@@ -611,6 +637,7 @@ SHELL_STATIC_SUBCMD_SET_CREATE(sub_cmd_draw,
 	SHELL_CMD_ARG(point, NULL, HELP_DRAW_POINT, cmd_draw_point, 3, 0),
 	SHELL_CMD_ARG(line, NULL, HELP_DRAW_LINE, cmd_draw_line, 5, 0),
 	SHELL_CMD_ARG(rect, NULL, HELP_DRAW_RECT, cmd_draw_rect, 5, 0),
+	SHELL_CMD_ARG(filled_rect, NULL, HELP_DRAW_RECT, cmd_draw_filled_rect, 5, 0),
 	SHELL_SUBCMD_SET_END
 );
 
