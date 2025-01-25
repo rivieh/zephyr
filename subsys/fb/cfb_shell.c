@@ -643,6 +643,54 @@ static int cmd_set_blanking(const struct shell *sh, size_t argc, char *argv[])
 	return err;
 }
 
+static int cmd_set_brightness(const struct shell *sh, size_t argc, char *argv[])
+{
+	int err;
+	int brightness;
+	const struct display_driver_api *api = dev->api;
+
+	if (!dev) {
+		shell_error(sh, HELP_INIT);
+		return -ENODEV;
+	}
+
+	brightness = strtol(argv[1], NULL, 10);
+
+	err = api->set_brightness(dev, brightness);
+	if (err) {
+		shell_error(sh, "Failed to set brightness to %d, err=%d\n", brightness, err);
+		return err;
+	}
+
+	shell_print(sh, "Set brightness to %d", brightness);
+
+	return err;
+}
+
+static int cmd_set_contrast(const struct shell *sh, size_t argc, char *argv[])
+{
+	int err;
+	int contrast;
+	const struct display_driver_api *api = dev->api;
+
+	if (!dev) {
+		shell_error(sh, HELP_INIT);
+		return -ENODEV;
+	}
+
+	contrast = strtol(argv[1], NULL, 10);
+
+	err = api->set_contrast(dev, contrast);
+	if (err) {
+		shell_error(sh, "Failed to set contrast to %d, err=%d\n", contrast, err);
+		return err;
+	}
+
+	shell_print(sh, "Set contrast to %d", contrast);
+
+	return err;
+}
+
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_cmd_get_param,
 
 	SHELL_CMD_ARG(all, NULL, NULL, cmd_get_param_all, 1, 0),
@@ -685,6 +733,8 @@ SHELL_STATIC_SUBCMD_SET_CREATE(cfb_cmds,
 	SHELL_CMD(draw, &sub_cmd_draw, "drawing text", NULL),
 	SHELL_CMD_ARG(clear, NULL, HELP_NONE, cmd_clear, 1, 0),
 	SHELL_CMD_ARG(set_blanking, NULL, "<on/off>", cmd_set_blanking, 2, 0),
+	SHELL_CMD_ARG(set_brightness, NULL, "<brightness", cmd_set_brightness, 2, 0),
+	SHELL_CMD_ARG(set_contrast, NULL, "contrast", cmd_set_contrast, 2, 0),
 	SHELL_SUBCMD_SET_END
 );
 
