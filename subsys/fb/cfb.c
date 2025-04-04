@@ -302,8 +302,10 @@ int cfb_draw_filled_rect(const struct device *dev, const struct cfb_position *st
 		  const struct cfb_position *end)
 {
 	struct char_framebuffer *fb = &char_fb;
+	uint16_t y_start = (start->y < end->y) ? start->y : end->y;
+	uint16_t y_end = (start->y > end->y) ? start->y : end->y;
 
-	for(uint16_t line = start->y; line <= end->y; line++) {
+	for (uint16_t line = y_start; line <= y_end; line++) {
 		draw_line(fb, start->x, line, end->x, line);
 	}
 
