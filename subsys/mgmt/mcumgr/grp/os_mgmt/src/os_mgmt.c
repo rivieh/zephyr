@@ -686,7 +686,7 @@ static int os_mgmt_info(struct smp_streamer *ctxt)
 
 	if (format_bitmask & OS_MGMT_INFO_FORMAT_HARDWARE_PLATFORM) {
 		rc = snprintf(&output[output_length], (sizeof(output) - output_length),
-			      (prior_output == true ? " %s%s%s" : "%s%s%s"), CONFIG_BOARD,
+			      (prior_output == true ? " %s%s%s" : "%s%s%s"), "temp_board",
 			      (sizeof(CONFIG_BOARD_REVISION) > 1 ? "@" : ""),
 			      CONFIG_BOARD_REVISION);
 
