@@ -84,6 +84,44 @@ static int cmd_on(const struct shell *sh, size_t argc, char **argv)
 	return err;
 }
 
+static int cmd_blink(const struct shell *sh, size_t argc, char **argv)
+{
+	const struct device *dev;
+	uint32_t led;
+	int err;
+	char *end_ptr;
+	unsigned long delay_on, delay_off;
+
+	err = parse_common_args(sh, argv, &dev, &led);
+	if (err < 0) {
+		return err;
+	}
+
+	/* Parse delay_on parameter */
+	delay_on = strtoul(argv[arg_idx_value], &end_ptr, 0);
+	if (*end_ptr != '\0') {
+		shell_error(sh, "Invalid delay_on parameter %s", argv[arg_idx_value]);
+		return -EINVAL;
+	}
+
+	/* Parse delay_off parameter */
+	delay_off = strtoul(argv[arg_idx_value + 1], &end_ptr, 0);
+	if (*end_ptr != '\0') {
+		shell_error(sh, "Invalid delay_off parameter %s", argv[arg_idx_value + 1]);
+		return -EINVAL;
+	}
+
+	shell_print(sh, "%s: blinking LED %d (on=%lu ms, off=%lu ms)",
+		    dev->name, led, delay_on, delay_off);
+
+	err = led_blink(dev, led, delay_on, delay_off);
+	if (err) {
+		shell_error(sh, "Error: %d", err);
+	}
+
+	return err;
+}
+
 static int cmd_get_info(const struct shell *sh, size_t argc, char **argv)
 {
 	const struct device *dev;
@@ -310,6 +348,8 @@ cmd_write_channels(const struct shell *sh, size_t argc, char **argv)
 SHELL_STATIC_SUBCMD_SET_CREATE(sub_led,
 	SHELL_CMD_ARG(off, NULL, "<device> <led>", cmd_off, 3, 0),
 	SHELL_CMD_ARG(on, NULL, "<device> <led>", cmd_on, 3, 0),
+	SHELL_CMD_ARG(blink, NULL, "<device> <led> <delay_on_ms> <delay_off_ms>",
+		      cmd_blink, 5, 0),
 	SHELL_CMD_ARG(get_info, NULL, "<device> <led>", cmd_get_info, 3, 0),
 	SHELL_CMD_ARG(set_brightness, NULL, "<device> <led> <value [0-100]>",
 		      cmd_set_brightness, 4, 0),
